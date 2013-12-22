@@ -65,6 +65,10 @@ public class Stop implements Comparable<Stop> {
         this.stop_url = stop_url;
     }
 
+    public String getName(){
+        return getStopId().replace("Caltrain", "").trim();
+    }
+
     @Override
     public int compareTo(Stop b){
         if( getZoneId() > b.getZoneId()){

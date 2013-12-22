@@ -21,11 +21,10 @@ import android.widget.TextView;
 
 import com.easycaltrain.BaseFragment;
 import com.easycaltrain.R;
+import com.easycaltrain.library.Preferences;
 import com.easycaltrain.loader.StopsLoader;
 import com.easycaltrain.model.CSVManager;
 import com.easycaltrain.model.Stop;
-import com.easycaltrain.ui.NextStopsActivity;
-import com.easycaltrain.ui.NextStopsFragment;
 
 import java.util.ArrayList;
 
@@ -39,6 +38,7 @@ import butterknife.InjectView;
  */
 public class MainFragment extends BaseFragment {
     private static final String TAG = "MainFragment";
+
     private static final int LOAD_STOPS = 0;
     @InjectView(R.id.stopList) ListView mStopList;
     @Inject CSVManager mCSVManager;
@@ -57,6 +57,8 @@ public class MainFragment extends BaseFragment {
         LoaderManager lm = getLoaderManager();
         mStopLoaderCallbacks = new StopsLoaderCallbacks();
         lm.initLoader(LOAD_STOPS, null, mStopLoaderCallbacks);
+
+        mFromStopId = mPreferences.getLastFromStation();
     }
 
     @Override
@@ -100,6 +102,7 @@ public class MainFragment extends BaseFragment {
                     startActivity(i);
                 }
 
+                mPreferences.setLastFromStation(mFromStopId);
                 mStopAdapter.notifyDataSetChanged();
 
                 return true;
@@ -120,8 +123,7 @@ public class MainFragment extends BaseFragment {
 
             TextView text = (TextView) convertView.findViewById(android.R.id.text1);
             Stop stop = getItem(position);
-            String stopName = stop.getStopId().replace("Caltrain", "").trim();
-            text.setText(stopName);
+            text.setText(stop.getName());
 
             if( mFromStopId != null && stop.getStopId().compareTo(mFromStopId) == 0 ){
                 convertView.setBackgroundColor(getResources().getColor(R.color.selected_gray));
