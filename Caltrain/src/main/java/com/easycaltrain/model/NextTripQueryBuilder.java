@@ -51,14 +51,13 @@ public class NextTripQueryBuilder {
     public String build(){
         setupCalendars();
 
-        if( isOneDayQuery() ){
-            return nextTripsQueryPart(true);
+        String rawQuery = nextTripsQueryPart(true);
+
+        if( !isOneDayQuery() ){
+            rawQuery += " UNION " +  nextTripsQueryPart(false);
         }
 
-        String rawQuery = nextTripsQueryPart(true)
-               + " UNION "
-               +  nextTripsQueryPart(false)
-               + " ORDER BY dayorder ASC, arrival_time ASC";
+        rawQuery += " ORDER BY dayorder ASC, arrival_time ASC";
 
         return rawQuery;
     }
