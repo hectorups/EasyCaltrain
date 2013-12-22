@@ -65,7 +65,7 @@ public class CupboardSQLiteOpenHelper extends SQLiteOpenHelper {
     */
     public Cursor nextTrips(Stop fromStop, Stop toStop){
         final NextTripQueryBuilder nextTripQueryBuilder = new NextTripQueryBuilder(fromStop, toStop);
-        return getWritableDatabase().rawQuery( nextTripQueryBuilder.build()  ,null);
+        return getWritableDatabase().rawQuery( nextTripQueryBuilder.build(), null);
     }
 
 

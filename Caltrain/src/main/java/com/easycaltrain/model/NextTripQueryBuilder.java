@@ -34,9 +34,10 @@ public class NextTripQueryBuilder {
     * @todo: take into account holidays
     */
     public String build(){
-        String rawQuery = "SELECT * FROM (" + nextTripsQueryPart(true) + ") AS first "
-                + " UNION "
-                +  "SELECT * FROM (" + nextTripsQueryPart(true) + ") AS second ";
+        String rawQuery = nextTripsQueryPart(true)
+               + " UNION "
+               +  nextTripsQueryPart(false)
+               + " ORDER BY dayorder ASC, arrival_time ASC";
 
         return rawQuery;
     }
@@ -62,14 +63,16 @@ public class NextTripQueryBuilder {
             timeClause = "arrival_time < '" + sdf.format(nextHours.getTime()) + "'";
         }
 
-        String rawQuery = "SELECT st1.* "
+        String dayorder = (first ? "0" : "1");
+
+        String rawQuery = "SELECT st1.*, " + dayorder + " AS dayorder"
                 + " FROM " + mStopTimeTableName + " AS st1, " + mTripTableName + " AS t"
                 + " WHERE st1.trip_id = t.trip_id"
                 + " AND " + weekClause( first ? rightNow.getTime() : nextHours.getTime() )
                 + " AND " + timeClause
                 + " AND stop_id = '" + mFromStop.getStopId() + "'"
-                + " AND " + joinDestination
-                + " ORDER BY arrival_time ASC";
+                + " AND " + joinDestination;
+               // + " ORDER BY arrival_time ASC";
 
         return rawQuery;
     }
