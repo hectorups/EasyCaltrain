@@ -5,12 +5,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import javax.inject.Inject;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
 
 import static nl.qbusict.cupboard.CupboardFactory.cupboard;
 
@@ -67,55 +62,12 @@ public class CupboardSQLiteOpenHelper extends SQLiteOpenHelper {
    /*
     * Given 2 stops finds the scheduled StopTime in the next hours
     *
-    * @todo: make it work for searches that span >2 days
-    * @todo: take into account holidays
     */
     public Cursor nextTrips(Stop fromStop, Stop toStop){
-        String stopTimeTableName = cupboard().getTable(StopTime.class);
-        String tripTableName = cupboard().getTable(Trip.class);
-
-        Calendar rightNow = Calendar.getInstance(TimeZone.getTimeZone(TIME_ZONE));
-        Calendar nextHours = (Calendar) rightNow.clone();
-        nextHours.add(Calendar.MINUTE, 190);
-
-        final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-	    sdf.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
-
-        String joinDestination = " EXISTS (SELECT 1 FROM " + stopTimeTableName + " AS st2"
-                + " WHERE st2.trip_id = st1.trip_id "
-                + " AND st2.stop_sequence > st1.stop_sequence"
-                + " AND st2.stop_id = '" + toStop.getStopId() + "' )";
-
-
-        String rawQuery = "SELECT st1.* "
-                          + " FROM " + stopTimeTableName + " AS st1, " + tripTableName + " AS t"
-                          + " WHERE st1.trip_id = t.trip_id"
-                          + " AND " + weekClause()
-                          + " AND arrival_time > '" + sdf.format(rightNow.getTime()) + "'"
-                          + " AND arrival_time < '" + sdf.format(nextHours.getTime()) + "'"
-                          + " AND stop_id = '" + fromStop.getStopId() + "'"
-                          + " AND " + joinDestination
-                          + " ORDER BY arrival_time ASC";
-
-        return getWritableDatabase().rawQuery(rawQuery, null);
+        final NextTripQueryBuilder nextTripQueryBuilder = new NextTripQueryBuilder(fromStop, toStop);
+        return getWritableDatabase().rawQuery( nextTripQueryBuilder.build()  ,null);
     }
 
-    private String weekClause(){
-        final SimpleDateFormat sdf = new SimpleDateFormat("F");
-        sdf.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
-        int weekDay = new Integer( sdf.format(new Date()) );
-
-        String clause = "";
-        if( weekDay <= 5){
-            clause = "t.service_id LIKE 'WD_%'";
-        } else if( weekDay == 6 ) {
-            clause = "( t.service_id LIKE 'WE_%' OR t.service_id LIKE 'ST_%' )";
-        } else {
-            clause = "t.service_id LIKE 'WE_%'";
-        }
-
-        return clause;
-    }
 
 
 }
