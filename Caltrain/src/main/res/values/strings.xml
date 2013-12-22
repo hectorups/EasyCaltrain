@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="caltrain_agency">Caltrain</string>
+    <string name="app_name">EasyCaltrain</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_next_stops">Next Stops</string>
+    <string name="empty_stop_time_list">There arent trains to %1$s in the next 90 minutes</string>
+
+</resources>

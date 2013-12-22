@@ -1,0 +1,15 @@
+.gradle/
+
+/local.properties
+/.idea/workspace.xml
+.DS_Store
+
+build/
+local.build
+
+.idea/
+
+Caltrain/src/main/res/raw/
+
+
+
