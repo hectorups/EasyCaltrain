@@ -21,11 +21,26 @@ public class NextTripQueryBuilder {
     private Stop mFromStop;
     private Stop mToStop;
 
+    private final SimpleDateFormat weekdayFormat = new SimpleDateFormat("F");
+    private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+
+    private Calendar mRightNow;
+    private Calendar mNextHours;
+
     public NextTripQueryBuilder(Stop fromStop, Stop toStop){
         mStopTimeTableName= cupboard().getTable(StopTime.class);
         mTripTableName = cupboard().getTable(Trip.class);
         mFromStop = fromStop;
         mToStop = toStop;
+
+        weekdayFormat.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
+        timeFormat.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
+    }
+
+    private void setupCalendars(){
+        mRightNow = Calendar.getInstance(TimeZone.getTimeZone(TIME_ZONE));
+        mNextHours = (Calendar) mRightNow.clone();
+        mNextHours.add(Calendar.HOUR, HOURS_AHEAD);
     }
 
     /*
@@ -34,6 +49,12 @@ public class NextTripQueryBuilder {
     * @todo: take into account holidays
     */
     public String build(){
+        setupCalendars();
+
+        if( isOneDayQuery() ){
+            return nextTripsQueryPart(true);
+        }
+
         String rawQuery = nextTripsQueryPart(true)
                + " UNION "
                +  nextTripsQueryPart(false)
@@ -42,45 +63,37 @@ public class NextTripQueryBuilder {
         return rawQuery;
     }
 
-    private String nextTripsQueryPart(boolean first){
-
-        Calendar rightNow = Calendar.getInstance(TimeZone.getTimeZone(TIME_ZONE));
-        Calendar nextHours = (Calendar) rightNow.clone();
-        nextHours.add(Calendar.HOUR, HOURS_AHEAD);
-
-        final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-        sdf.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
-
-        String joinDestination = " EXISTS (SELECT 1 FROM " + mStopTimeTableName + " AS st2"
-                + " WHERE st2.trip_id = st1.trip_id "
-                + " AND st2.stop_sequence > st1.stop_sequence"
-                + " AND st2.stop_id = '" + mToStop.getStopId() + "' )";
-
+    private String nextTripsQueryPart(boolean firstQuery){
         String timeClause;
-        if(first){
-            timeClause = "arrival_time > '" + sdf.format(rightNow.getTime()) + "'";
+        if(firstQuery){
+            timeClause = "arrival_time > '" + timeFormat.format(mRightNow.getTime()) + "'";
         } else {
-            timeClause = "arrival_time < '" + sdf.format(nextHours.getTime()) + "'";
+            timeClause = "arrival_time < '" + timeFormat.format(mNextHours.getTime()) + "'";
         }
 
-        String dayorder = (first ? "0" : "1");
+        String dayorder = (firstQuery ? "0" : "1");
 
         String rawQuery = "SELECT st1.*, " + dayorder + " AS dayorder"
                 + " FROM " + mStopTimeTableName + " AS st1, " + mTripTableName + " AS t"
                 + " WHERE st1.trip_id = t.trip_id"
-                + " AND " + weekClause( first ? rightNow.getTime() : nextHours.getTime() )
+                + " AND " + weekClause( firstQuery ? mRightNow.getTime() : mNextHours.getTime() )
                 + " AND " + timeClause
                 + " AND stop_id = '" + mFromStop.getStopId() + "'"
-                + " AND " + joinDestination;
+                + " AND " + joinDestination();
                // + " ORDER BY arrival_time ASC";
 
         return rawQuery;
     }
 
+    private String joinDestination(){
+        return " EXISTS (SELECT 1 FROM " + mStopTimeTableName + " AS st2"
+                + " WHERE st2.trip_id = st1.trip_id "
+                + " AND st2.stop_sequence > st1.stop_sequence"
+                + " AND st2.stop_id = '" + mToStop.getStopId() + "' )";
+    }
+
     private String weekClause(Date date){
-        final SimpleDateFormat sdf = new SimpleDateFormat("F");
-        sdf.setTimeZone(TimeZone.getTimeZone(TIME_ZONE));
-        int weekDay = new Integer( sdf.format(date) );
+        int weekDay = new Integer( weekdayFormat.format(date) );
 
         String clause = "";
         if( weekDay <= 5){
@@ -92,5 +105,9 @@ public class NextTripQueryBuilder {
         }
 
         return clause;
+    }
+
+    private boolean isOneDayQuery(){
+        return ( weekdayFormat.format(mRightNow.getTime()) == weekdayFormat.format(mNextHours.getTime()) );
     }
 }
