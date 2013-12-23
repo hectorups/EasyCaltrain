@@ -3,6 +3,8 @@ package com.easycaltrain.model;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import com.easycaltrain.library.CaltrainHoliday;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -46,7 +48,6 @@ public class NextTripQueryBuilder {
     /*
     * Given 2 stops finds the scheduled StopTime in the next hours
     *
-    * @todo: take into account holidays
     */
     public String build(){
         setupCalendars();
@@ -92,7 +93,17 @@ public class NextTripQueryBuilder {
     }
 
     private String weekClause(Date date){
-        int weekDay = new Integer( weekdayFormat.format(date) );
+        int weekDay;
+
+        CaltrainHoliday caltrainHoliday = new CaltrainHoliday(date);
+
+        if( caltrainHoliday.isSaturdayHoliday() ){
+            weekDay = 6;
+        } else if( caltrainHoliday.isSundayHoliday() ) {
+            weekDay = 7;
+        } else {
+            weekDay = new Integer( weekdayFormat.format(date) );
+        }
 
         String clause = "";
         if( weekDay <= 5){
